@@ -161,6 +161,7 @@ class KanikoEngine(ContainerEngine):
 
         # Kaniko uses a registry as a cache
         if self.cache_registry:
+            cache_registry_host = self.cache_registry.split("/")[0]
             cmdargs.extend(
                 [
                     "--cache=true",
@@ -172,10 +173,10 @@ class KanikoEngine(ContainerEngine):
             if self.cache_registry_credentials:
                 cache_credentials = self.cache_registry_credentials.copy()
                 if self.cache_registry_insecure:
-                    cmdargs.append(f"--insecure-registry={self.cache_registry}")
+                    cmdargs.append(f"--insecure-registry={cache_registry_host}")
                     cache_credentials["tls-verify=false"] = None
                 if not cache_credentials.get("registry"):
-                    cache_credentials["registry"] = self.cache_registry
+                    cache_credentials["registry"] = cache_registry_host
                 self._login(**cache_credentials)
 
         if self.cache_dir:
