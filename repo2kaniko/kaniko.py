@@ -255,6 +255,7 @@ class KanikoEngine(ContainerEngine):
         if not self.push_image:
             raise ValueError("Image must be pushed by setting push_image=True")
         # Otherwise should already have pushed as part of build
+        return []
 
     def run(
         self,
