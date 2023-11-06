@@ -8,11 +8,10 @@ Kaniko must run in a container, can only build images, and can only store images
 It has the big advantage that it i completely unprivileged and doesn't require any host configuration, unlike e.g. Podman which requires your system to have the correct cgroups configuration.
 
 It does not use a local Docker store, so it is not possible to separate the build and push steps.
-Instead this will push the image to a registry by default.
-Use Traitlet `KanikoEngine.push_image=False` or environment variable `KANIKO_PUSH_IMAGE=0` to disable this.
+This means the repo2docker `--push` argument has no effect, you must set Traitlet `KanikoEngine.push_image=True` or environment variable `KANIKO_PUSH_IMAGE=1` to automatically push the image to a container registry as part of the build step.
 
-Kaniko does not cache layers locally, instead if uses a registry.
-You should probably use a dedicated local private registry for speed.
+Kaniko does not cache layers locally, instead it uses a registry for caching.
+You should probably use a dedicated local private registry for speed and not the remote registry used for storing the built image.
 Use `KanikoEngine.cache_registry_credentials` or `KANIKO_CACHE_REGISTRY_CREDENTIALS` to specify the credentials for the cache registry.
 These behave similarly to `ContainerEngine.registry_credentials` and `CONTAINER_ENGINE_REGISTRY_CREDENTIALS`.
 

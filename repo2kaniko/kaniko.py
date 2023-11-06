@@ -251,8 +251,8 @@ class KanikoEngine(ContainerEngine):
         log_debug(o)
 
     def push(self, image_spec):
-        if not self.destination:
-            raise ValueError("No destination set")
+        if not self.push_image:
+            raise ValueError("Image must be pushed by setting push_image=True")
         # Otherwise should already have pushed as part of build
 
     def run(
