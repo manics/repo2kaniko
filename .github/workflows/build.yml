@@ -61,6 +61,9 @@ jobs:
       - lint
       - build
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
