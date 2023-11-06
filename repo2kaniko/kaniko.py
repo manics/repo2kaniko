@@ -167,7 +167,7 @@ class KanikoEngine(ContainerEngine):
                     "--cache=true",
                     "--cache-copy-layers=true",
                     "--cache-run-layers=true",
-                    f"-cache-repo={self.cache_registry}",
+                    f"--cache-repo={self.cache_registry}",
                 ]
             )
             if self.cache_registry_credentials:
