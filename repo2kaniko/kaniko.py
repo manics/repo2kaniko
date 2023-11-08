@@ -229,17 +229,17 @@ class KanikoEngine(ContainerEngine):
                 password = v
             elif k == "registry":
                 registry = v
-            else:
+            elif v is None:
                 args.append(f"--{k}")
-                if v is not None:
-                    args.append(v)
+            else:
+                args.append(f"--{k}={v}")
 
         if password is not None:
             args.append("--password-stdin")
 
         if authfile is None:
             authfile = os.path.expanduser("~/.docker/config.json")
-        args.extend(["--authfile", authfile])
+        args.append(f"--authfile={authfile}")
 
         if registry is not None:
             args.append(registry)
