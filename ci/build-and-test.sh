@@ -43,6 +43,9 @@ echo "::endgroup::"
 echo "::group::Check repo2kaniko"
 echo password | $ENGINE login --username=user --password-stdin --tls-verify=false localhost:5000
 $ENGINE pull localhost:5000/test-conda:ci
+echo "repo2docker --version:"
+$ENGINE run $REPO2KANIKO_IMAGE repo2docker --version
+echo "/home/jovyan/verify:"
 $ENGINE run --rm localhost:5000/test-conda:ci /home/jovyan/verify
 
 ./ci/check-registry.py
