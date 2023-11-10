@@ -107,12 +107,9 @@ jobs:
       - test
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    permissions:
-      contents: read
-      packages: write
     env:
-      DEFAULT_REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      DEFAULT_REGISTRY: quay.io
+      IMAGE_NAME: manics/repo2kaniko
 
     services:
       # So that we can test this in PRs/branches
@@ -154,7 +151,7 @@ jobs:
       - name: Login to registry
         if: env.REGISTRY != 'localhost:5000'
         run: |
-          docker login -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}" "${{ env.REGISTRY }}"
+          docker login -u "${{ secrets.QUAY_USERNAME }}" -p "${{ secrets.QUAY_PASSWORD }}" "${{ env.REGISTRY }}"
 
       - name: Build and push
         uses: docker/build-push-action@v5
