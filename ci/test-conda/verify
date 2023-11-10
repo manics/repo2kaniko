@@ -5,3 +5,5 @@ import simplejson  # noqa: F401
 
 assert sys.version_info[:2] == (3, 10), sys.version
 assert numpy.__version__ == "1.26.0"
+
+print("OK")
