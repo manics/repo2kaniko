@@ -1,6 +1,7 @@
 # repo2kaniko
 
 [![Build Status](https://github.com/manics/repo2kaniko/actions/workflows/build.yml/badge.svg)](https://github.com/manics/repo2kaniko/actions/workflows/build.yml)
+[![Container repository](https://img.shields.io/badge/quay.io-container-purple)](https://quay.io/repository/manics/repo2kaniko?tab=tags)
 
 `repo2kaniko` is a plugin for [repo2docker](http://repo2docker.readthedocs.io) that lets you use [Kaniko](https://github.com/GoogleContainerTools/kaniko) instead of Docker.
 
@@ -20,7 +21,7 @@ These behave similarly to `ContainerEngine.registry_credentials` and `CONTAINER_
 ## Running
 
 ```
-podman run -it --rm repo2kaniko \
+podman run -it --rm quay.io/manics/repo2kaniko \
     repo2docker --debug --engine=kaniko \
     --Repo2Docker.user_id=1000 --user-name=jovyan \
     --KanikoEngine.registry_credentials=registry=quay.io \
@@ -36,7 +37,7 @@ With a local registry that can be used as a cache:
 ```
 ./run-local-registry.sh
 REGISTRY=...
-podman run -it --rm repo2kaniko \
+podman run -it --rm quay.io/manics/repo2kaniko \
     repo2docker --debug --engine=kaniko \
     --Repo2Docker.user_id=1000 --user-name=jovyan \
     --KanikoEngine.cache_registry=$REGISTRY/cache \
