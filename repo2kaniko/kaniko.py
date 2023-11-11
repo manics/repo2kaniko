@@ -38,7 +38,7 @@ class KanikoEngine(ContainerEngine):
     kaniko_loglevel = Unicode("", help="Kaniko log level", config=True)
 
     push_image = Bool(
-        help="Push built image.",
+        help="Push built image, default true.",
         config=True,
     )
 
@@ -47,7 +47,7 @@ class KanikoEngine(ContainerEngine):
         """
         Set push_image from KANIKO_PUSH_IMAGE
         """
-        return os.getenv("KANIKO_PUSH_IMAGE", "").lower() in ("1", "t", "true")
+        return os.getenv("KANIKO_PUSH_IMAGE", "1").lower() in ("1", "t", "true")
 
     cache_registry = Unicode(
         "",
