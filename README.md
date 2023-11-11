@@ -48,3 +48,36 @@ podman run -it --rm quay.io/manics/repo2kaniko \
     --no-run \
     https://github.com/binderhub-ci-repos/minimal-dockerfile
 ```
+
+## BinderHub
+
+You can use repo2kaniko with a recent version of BinderHub
+([1.0.0-0.dev.git.3350.he7995d6 or later](https://hub.jupyter.org/helm-chart/#development-releases-binderhub))
+by adding the following to your configuration:
+
+```yaml
+config:
+  KubernetesBuildExecutor:
+    docker_host:
+    build_image: "quay.io/manics/repo2kaniko:<tag>"
+    repo2docker_extra_args:
+      - --engine=kaniko
+      - --debug
+
+imageCleaner:
+  enabled: false
+```
+
+If you want to use a local registry as a cache use something like this:
+
+```yaml
+config:
+  KubernetesBuildExecutor:
+    repo2docker_extra_args:
+      - --engine=kaniko
+      - --debug
+      - --KanikoEngine.cache_registry=cache-registry-docker-registry:5000/cache
+      - --KanikoEngine.cache_registry_credentials=username=user
+      - --KanikoEngine.cache_registry_credentials=password=password
+      - --KanikoEngine.cache_registry_insecure=true
+```
