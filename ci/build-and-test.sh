@@ -31,7 +31,6 @@ echo "::group::Run repo2kaniko"
 $ENGINE run --rm --network=host -v "$PWD/ci/test-conda:/test-conda:ro,z" \
   "$REPO2KANIKO_IMAGE" repo2docker --engine kaniko --no-run --debug \
   --user-id=1000 --user-name=jovyan --image-name $PUSHED_IMAGE \
-  --KanikoEngine.push_image=true \
   --KanikoEngine.registry_credentials=registry=$REGISTRY \
   --KanikoEngine.registry_credentials=username=user \
   --KanikoEngine.registry_credentials=password=password \
