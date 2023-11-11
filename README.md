@@ -1,6 +1,7 @@
 # repo2kaniko
 
 [![Build Status](https://github.com/manics/repo2kaniko/actions/workflows/build.yml/badge.svg)](https://github.com/manics/repo2kaniko/actions/workflows/build.yml)
+[![Container repository](https://img.shields.io/badge/quay.io-container-purple)](https://quay.io/repository/manics/repo2kaniko?tab=tags)
 
 `repo2kaniko` is a plugin for [repo2docker](http://repo2docker.readthedocs.io) that lets you use [Kaniko](https://github.com/GoogleContainerTools/kaniko) instead of Docker.
 
