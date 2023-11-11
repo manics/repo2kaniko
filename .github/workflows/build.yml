@@ -134,11 +134,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get short reference (e.g. branch or tag)
-        # If there are multiple / (e.g. refs/prs/123/merge) use the last component
-        run: |
-          echo "SHORT_REF=${GITHUB_REF##refs*/}" >> $GITHUB_ENV
-
       - name: Set up QEMU to build multiple platforms
         uses: docker/setup-qemu-action@v3
 
@@ -153,10 +148,20 @@ jobs:
         run: |
           docker login -u "${{ secrets.QUAY_USERNAME }}" -p "${{ secrets.QUAY_PASSWORD }}" "${{ env.REGISTRY }}"
 
+      # https://github.com/jupyterhub/action-major-minor-tag-calculator
+      - name: Get list of image tags
+        id: imagetags
+        uses: jupyterhub/action-major-minor-tag-calculator@v2.0.0
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          prefix: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:"
+          defaultTag: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:noref"
+          branchRegex: ^\w[\w-.]*$
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHORT_REF }}
+          tags: ${{ join(fromJson(steps.imagetags.outputs.tags)) }}
