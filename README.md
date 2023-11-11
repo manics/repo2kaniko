@@ -21,7 +21,7 @@ These behave similarly to `ContainerEngine.registry_credentials` and `CONTAINER_
 ## Running
 
 ```
-podman run -it --rm repo2kaniko \
+podman run -it --rm quay.io/manics/repo2kaniko \
     repo2docker --debug --engine=kaniko \
     --Repo2Docker.user_id=1000 --user-name=jovyan \
     --KanikoEngine.registry_credentials=registry=quay.io \
@@ -37,7 +37,7 @@ With a local registry that can be used as a cache:
 ```
 ./run-local-registry.sh
 REGISTRY=...
-podman run -it --rm repo2kaniko \
+podman run -it --rm quay.io/manics/repo2kaniko \
     repo2docker --debug --engine=kaniko \
     --Repo2Docker.user_id=1000 --user-name=jovyan \
     --KanikoEngine.cache_registry=$REGISTRY/cache \
