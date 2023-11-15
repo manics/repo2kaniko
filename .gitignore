@@ -133,3 +133,7 @@ dmypy.json
 repo2kaniko/_version.py*
 tests/*/
 !tests/unit
+
+registry.htpasswd
+.docker
+kaniko-runner

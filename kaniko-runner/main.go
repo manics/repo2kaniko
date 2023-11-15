@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -14,9 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/containers/common/pkg/auth"
-	"github.com/containers/image/v5/types"
+	"strings"
 )
 
 type inputRequest struct {
@@ -26,9 +24,26 @@ type inputRequest struct {
 
 type inputCredentials struct {
 	Registry string `json:"registry"`
+	// Either set Auth (base64 string), or Username + Password
+	Auth     string `json:"auth"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Insecure bool   `json:"insecure"`
+}
+
+//	{
+//	  "auths": {
+//	     "host": {
+//	       "auth": "base64"
+//	     }
+//		 }
+//	}
+type dockerConfigAuths struct {
+	Auths map[string]dockerConfigAuth `json:"auths"`
+}
+
+type dockerConfigAuth struct {
+	Auth string `json:"auth"`
 }
 
 func listen(addr string) (net.Listener, error) {
@@ -63,6 +78,48 @@ func dockerConfigPath() string {
 	return filepath.Join(executableDir, ".docker", "config.json")
 }
 
+func loadDockerConfig() (dockerConfigAuths, error) {
+	var config dockerConfigAuths
+	configPath := dockerConfigPath()
+	if _, err := os.Stat(configPath); err == nil {
+		configFile, err := os.Open(configPath)
+		if err != nil {
+			return config, err
+		}
+		defer configFile.Close()
+
+		if err := json.NewDecoder(configFile).Decode(&config); err != nil {
+			return config, err
+		}
+	}
+	if config.Auths == nil {
+		config.Auths = make(map[string]dockerConfigAuth)
+	}
+	return config, nil
+}
+
+func saveDockerConfig(config dockerConfigAuths) error {
+	configPath := dockerConfigPath()
+	configDir := filepath.Dir(configPath)
+	if err := os.MkdirAll(configDir, 0700); err != nil {
+		return err
+	}
+
+	configFile, err := os.Create(configPath)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+
+	encoder := json.NewEncoder(configFile)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
@@ -89,30 +146,40 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	for _, cred := range input.Credentials {
-		ctx := context.Background()
-		// var cancel context.CancelFunc = func() {}
-		// ctx, cancel = context.WithTimeout(ctx, 1000)
-		// defer cancel()
+	dockerConfig, err := loadDockerConfig()
 
-		// Login to the registry
-		systemCtx := types.SystemContext{}
-		if cred.Insecure {
-			systemCtx.DockerInsecureSkipTLSVerify = types.OptionalBoolTrue
-		}
-		opts := auth.LoginOptions{
-			AuthFile: dockerConfigPath(),
-			Username: cred.Username,
-			Password: cred.Password,
-			Verbose:  true,
-			Stdout:   os.Stdout,
-		}
-		log.Printf("Logging in to %s", cred.Registry)
-		args := []string{cred.Registry}
-		if err := auth.Login(ctx, &systemCtx, &opts, args); err != nil {
+	if len(input.Credentials) > 0 {
+		// Load the existing docker config
+		if err != nil {
 			returnError(conn, err)
 			return
 		}
+
+		for _, cred := range input.Credentials {
+			// Add the credentials to the docker config
+			if cred.Auth != "" && cred.Username != "" {
+				returnError(conn, errors.New("cannot specify both auth and username/password"))
+				return
+			}
+			if cred.Auth != "" {
+				dockerConfig.Auths[cred.Registry] = dockerConfigAuth{Auth: cred.Auth}
+			} else {
+				auth := base64.StdEncoding.EncodeToString([]byte(cred.Username + ":" + cred.Password))
+				dockerConfig.Auths[cred.Registry] = dockerConfigAuth{Auth: auth}
+			}
+		}
+	}
+
+	// log the registries from dockerConfig
+	var registries []string
+	for registry := range dockerConfig.Auths {
+		registries = append(registries, registry)
+	}
+	log.Printf("Registries: %s", strings.Join(registries, " "))
+
+	if err := saveDockerConfig(dockerConfig); err != nil {
+		returnError(conn, err)
+		return
 	}
 
 	log.Printf("Running command: %s", input.Command)
