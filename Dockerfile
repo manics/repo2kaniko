@@ -10,6 +10,8 @@ COPY --from=kaniko /kaniko /kaniko
 COPY . /repo2kaniko
 RUN pip install /repo2kaniko
 
+RUN mkdir /workspace
+
 # podman pod create --name=r2k --publish=8888:8888
 # podman run --pod=r2k --rm -it registry
 # podman run --pod=r2k --rm -it -v $PWD:/src:ro,z repo2kaniko bash

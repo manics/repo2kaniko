@@ -1,9 +1,12 @@
 # Use Kaniko instead of Docker
 import json
 import os
+from shutil import copytree
+import socket
 import tarfile
 from tempfile import TemporaryDirectory
-from traitlets import default, Bool, Dict, Unicode
+from traitlets import default, Bool, Dict, Unicode, validate
+from urllib.parse import urlparse
 
 from repo2docker.engine import (
     ContainerEngine,
@@ -28,6 +31,29 @@ class KanikoEngine(ContainerEngine):
         help="The kaniko executable to use for all commands.",
         config=True,
     )
+
+    kaniko_address = Unicode(
+        # "tcp://localhost:8080",
+        "",
+        help=(
+            "The address to connect to the Kaniko server. "
+            "Set to empty to use the local Kaniko executor (not officially supported)."
+        ),
+        config=True,
+    )
+
+    kaniko_build_path = Unicode(
+        "/workspace",
+        help="Shared directory for build context when a separate Kaniko container is used.",
+        config=True,
+    )
+
+    @validate("kaniko_build_path")
+    def _validate_kaniko_build_path(self, proposal):
+        value = proposal["value"]
+        if not value.endswith("/"):
+            value += "/"
+        return value
 
     login_executable = Unicode(
         "skopeo",
@@ -104,6 +130,56 @@ class KanikoEngine(ContainerEngine):
 
         lines = exec_podman(["version"], capture="stdout", exe=self.kaniko_executable)
         log_debug(lines)
+
+    def _create_build_context(self, fileobj, srcpath, builddir):
+        if fileobj:
+            tarf = tarfile.open(fileobj=fileobj)
+            tarf.extractall(builddir)
+            log_debug(builddir)
+
+            lines = execute_cmd(["ls", "-lRa", builddir], capture="stdout")
+            log_debug(lines)
+        elif srcpath:
+            copytree(srcpath, builddir, symlinks=True)
+        else:
+            raise ValueError("No fileobj or srcpath")
+
+    def _run_external_kaniko(self, cmdargs):
+        input = {
+            "command": [self.kaniko_executable] + cmdargs,
+            "credentials": [],
+        }
+        # Dict with fields
+        # - registry
+        # - Either username and password
+        # - Or auth
+        if self.registry_credentials:
+            input["credentials"].append(self.registry_credentials)
+        if self.cache_registry_credentials:
+            input["credentials"].append(self.cache_registry_credentials)
+
+        url = urlparse(self.kaniko_address)
+        if url.scheme == "tcp":
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((url.hostname, url.port))
+        elif url.scheme == "unix":
+            s = socket.socket(socket.AF_UNIX)
+            s.connect(url.path)
+
+        message = json.dumps(input) + "\n"
+        s.sendall(message.encode())
+
+        # Receive data
+        data = b""
+        while True:
+            chunk = s.recv(1024000)
+            # print(chunk.decode(), end="")
+            yield chunk.decode()
+            if not chunk:
+                break
+            data += chunk
+
+        s.close()
 
     def build(
         self,
@@ -191,23 +267,18 @@ class KanikoEngine(ContainerEngine):
 
         # Avoid try-except so that if build errors occur they don't result in a
         # confusing message about an exception whilst handling an exception
-        if fileobj:
-            with TemporaryDirectory() as builddir:
+        if self.kaniko_address:
+            with TemporaryDirectory(prefix=self.kaniko_build_path) as builddir:
+                self._create_build_context(fileobj, path, builddir)
                 cmdargs.extend(["--context", builddir])
-                tarf = tarfile.open(fileobj=fileobj)
-                tarf.extractall(builddir)
-                log_debug(builddir)
-
-                lines = execute_cmd(["ls", "-lRa", builddir], capture="stdout")
-                log_debug(lines)
                 for line in exec_podman_stream(cmdargs, exe=self.kaniko_executable):
                     yield line
         else:
-            builddir = path
-            assert path
-            cmdargs.extend(["--context", builddir])
-            for line in exec_podman_stream(cmdargs, exe=self.kaniko_executable):
-                yield line
+            with TemporaryDirectory() as builddir:
+                self._create_build_context(fileobj, path, builddir)
+                cmdargs.extend(["--context", builddir])
+                for line in exec_podman_stream(cmdargs, exe=self.kaniko_executable):
+                    yield line
 
     def images(self):
         log_debug("kaniko images not supported")
