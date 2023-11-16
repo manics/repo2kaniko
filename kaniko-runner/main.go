@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type inputRequest struct {
@@ -120,13 +121,13 @@ func saveDockerConfig(config dockerConfigAuths) error {
 	return nil
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn) error {
 	defer conn.Close()
 
 	// Read the incoming command from the client
 	inputJson, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
-		return
+		return err
 	}
 
 	// input is a JSON object like:
@@ -143,7 +144,7 @@ func handleConnection(conn net.Conn) {
 	var input inputRequest
 	if err := json.Unmarshal([]byte(inputJson), &input); err != nil {
 		returnError(conn, err)
-		return
+		return err
 	}
 
 	dockerConfig, err := loadDockerConfig()
@@ -152,14 +153,15 @@ func handleConnection(conn net.Conn) {
 		// Load the existing docker config
 		if err != nil {
 			returnError(conn, err)
-			return
+			return err
 		}
 
 		for _, cred := range input.Credentials {
 			// Add the credentials to the docker config
 			if cred.Auth != "" && cred.Username != "" {
-				returnError(conn, errors.New("cannot specify both auth and username/password"))
-				return
+				err := errors.New("cannot specify both auth and username/password")
+				returnError(conn, err)
+				return err
 			}
 			if cred.Auth != "" {
 				dockerConfig.Auths[cred.Registry] = dockerConfigAuth{Auth: cred.Auth}
@@ -179,7 +181,7 @@ func handleConnection(conn net.Conn) {
 
 	if err := saveDockerConfig(dockerConfig); err != nil {
 		returnError(conn, err)
-		return
+		return err
 	}
 
 	log.Printf("Running command: %s", input.Command)
@@ -191,12 +193,12 @@ func handleConnection(conn net.Conn) {
 	stdout, erro := cmd.StdoutPipe()
 	if erro != nil {
 		returnError(conn, erro)
-		return
+		return erro
 	}
 	stderr, erre := cmd.StderrPipe()
 	if erre != nil {
 		returnError(conn, erre)
-		return
+		return erre
 	}
 
 	// Create a multiwriter that writes to both the console and the connection
@@ -205,7 +207,7 @@ func handleConnection(conn net.Conn) {
 
 	if err := cmd.Start(); err != nil {
 		returnError(conn, err)
-		return
+		return err
 	}
 
 	// Use goroutines to handle stdout and stderr separately
@@ -214,14 +216,17 @@ func handleConnection(conn net.Conn) {
 
 	if err = cmd.Wait(); err != nil {
 		returnError(conn, err)
-		return
+		return err
 	}
 	fmt.Fprintln(conn, "status: SUCCESS")
+	return nil
 }
 
 func main() {
 	var listenAddr string
 	flag.StringVar(&listenAddr, "address", "tcp://localhost:8080", "address to listen on, e.g. unix:///tmp/go-runner.sock, tcp://localhost:8080")
+	var multiple bool
+	flag.BoolVar(&multiple, "multiple", false, "Keep listening after request finishes, , not supported by Kaniko")
 	flag.Parse()
 
 	ln, err := listen(listenAddr)
@@ -235,6 +240,16 @@ func main() {
 			panic(err)
 		}
 
-		go handleConnection(conn)
+		if multiple {
+			go handleConnection(conn) //nolint:errcheck
+		} else {
+			err := handleConnection(conn)
+			// Give the client some time to read the output before exiting
+			time.Sleep(2 * time.Second)
+			if err != nil {
+				log.Fatalf("ERROR: %v", err)
+			}
+			break
+		}
 	}
 }
