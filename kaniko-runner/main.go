@@ -158,7 +158,12 @@ func handleConnection(conn net.Conn) error {
 
 		for _, cred := range input.Credentials {
 			// Add the credentials to the docker config
-			if cred.Auth != "" && cred.Username != "" {
+			if cred.Registry == "" {
+				err := errors.New("registry is required")
+				returnError(conn, err)
+				return err
+			}
+			if cred.Auth != "" && (cred.Username != "" || cred.Password != "") {
 				err := errors.New("cannot specify both auth and username/password")
 				returnError(conn, err)
 				return err
