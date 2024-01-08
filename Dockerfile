@@ -1,6 +1,6 @@
 FROM gcr.io/kaniko-project/executor:v1.18.0 as kaniko
 
-FROM quay.io/jupyterhub/repo2docker:2023.06.0-41.g57d229e
+FROM quay.io/jupyterhub/repo2docker:2023.06.0-49.g7713f2a
 
 # Install skopeo just so we can login to insecure registries
 RUN apk add --no-cache skopeo
