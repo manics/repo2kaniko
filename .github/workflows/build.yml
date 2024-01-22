@@ -10,7 +10,9 @@ jobs:
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - uses: pre-commit/action@v3.0.0
 
   build:
@@ -21,9 +23,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           cache: pip
           cache-dependency-path: dev-requirements.txt
 
@@ -93,7 +95,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install pypa/build
         run: python -m pip install build
@@ -104,7 +108,7 @@ jobs:
       # Uses OIDC
       - name: Publish to PyPI
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@v1.8.10
+        uses: pypa/gh-action-pypi-publish@v1.8.11
 
   container:
     name: Build container
@@ -167,7 +171,7 @@ jobs:
       # https://github.com/jupyterhub/action-major-minor-tag-calculator
       - name: Get list of image tags
         id: imagetags
-        uses: jupyterhub/action-major-minor-tag-calculator@v2.0.0
+        uses: jupyterhub/action-major-minor-tag-calculator@v3.1.0
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           prefix: "${{ env.REGISTRY }}/${{ matrix.image_name }}:"
