@@ -26,3 +26,5 @@ print(f"cache tags: {cache_tags}")
 # Should all be hashes
 assert all(len(c) == 64 for c in cache_tags)
 assert len(cache_tags) > 4
+
+print("PASSED")

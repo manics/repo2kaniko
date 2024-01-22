@@ -66,9 +66,17 @@ jobs:
       - name: Podman info
         run: podman info
 
-      - name: Build and test container
-        run: |
-          ./ci/build-and-test.sh
+      - name: Install from repo
+        run: pip install .
+
+      - name: Build container
+        run: ./ci/build.sh
+
+      - name: Test local repo2kaniko
+        run: ./ci/test.sh repo2docker
+
+      - name: Test repo2kaniko container
+        run: ./ci/test.sh container
 
   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-pypi
   publish-pypi:
@@ -109,7 +117,6 @@ jobs:
     timeout-minutes: 10
     env:
       DEFAULT_REGISTRY: quay.io
-      IMAGE_NAME: manics/repo2kaniko
 
     services:
       # So that we can test this in PRs/branches
@@ -117,6 +124,15 @@ jobs:
         image: registry:2
         ports:
           - 5000:5000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: .
+            image_name: manics/repo2kaniko
+          - context: ./kaniko-runner
+            image_name: manics/repo2kaniko-runner
 
     steps:
       - name: Should we push this image to a public registry?
@@ -154,8 +170,8 @@ jobs:
         uses: jupyterhub/action-major-minor-tag-calculator@v2.0.0
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          prefix: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:"
-          defaultTag: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:noref"
+          prefix: "${{ env.REGISTRY }}/${{ matrix.image_name }}:"
+          defaultTag: "${{ env.REGISTRY }}/${{ matrix.image_name }}:noref"
           branchRegex: ^\w[\w-.]*$
 
       - name: Build and push

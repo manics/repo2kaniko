@@ -5,8 +5,8 @@
 
 `repo2kaniko` is a plugin for [repo2docker](http://repo2docker.readthedocs.io) that lets you use [Kaniko](https://github.com/GoogleContainerTools/kaniko) instead of Docker.
 
-Kaniko must run in a container, can only build images, and can only store images in a registry.
-It has the big advantage that it i completely unprivileged and doesn't require any host configuration, unlike e.g. Podman which requires your system to have the correct cgroups configuration.
+Kaniko must run in a standalone container, can only build images, and can only store images in a registry.
+It has the big advantage that it is completely unprivileged and doesn't require any host configuration, unlike e.g. Podman which requires your system to have the correct cgroups configuration.
 
 It does not use a local Docker store, so it is not possible to separate the build and push steps.
 **This means the repo2docker `--push`/`--no-push` arguments have no effect.**
@@ -20,33 +20,46 @@ These behave similarly to `ContainerEngine.registry_credentials` and `CONTAINER_
 
 ## Running
 
-```
-podman run -it --rm quay.io/manics/repo2kaniko \
-    repo2docker --debug --engine=kaniko \
-    --Repo2Docker.user_id=1000 --user-name=jovyan \
-    --KanikoEngine.registry_credentials=registry=quay.io \
-    --KanikoEngine.registry_credentials=username=quay-user \
-    --KanikoEngine.registry_credentials=password=quay-password \
-    --image-name=quay.io/quay-user/r2d-test \
-    --no-run \
-    https://github.com/binderhub-ci-repos/minimal-dockerfile
-```
+Kaniko must be run in a standalone container with no other applications, and can only build one image.
+In practice this means Kaniko must be run in a separate container from repo2docker.
+Communication between repo2docker and Kaniko is done using a network socket and a helper utility (`kaniko-runner`).
 
-With a local registry that can be used as a cache:
+1. Create a new network to isolate Kaniko and repo2docker
+   ```
+   podman network create repo2kaniko
+   ```
+2. Run the `kaniko-runner` container with a shared empty workspace volume that must be mounted to `/workspace`
+   ```
+   podman run -d --rm -p 12321:12321 --name kaniko-runner --network repo2kaniko \
+     -v /tmp/workspace:/workspace:z kaniko-runner -address=tcp://0.0.0.0:12321
+   ```
+3. Run repo2docker with the kaniko plugin
+   ```
+   podman run -it --rm -v /tmp/workspace:/workspace:z repo2kaniko \
+     repo2docker --engine=kaniko --no-run --debug \
+     --user-id=1000 --user-name=jovyan
+     --image-name registry.example.com/r2d-test \
+     --KanikoEngine.registry_credentials=registry=registry.example.com
+     --KanikoEngine.registry_credentials=username=registry-user
+     --KanikoEngine.registry_credentials=password=registry-password
+     --KanikoEngine.kaniko_address=tcp://kaniko-runner:12321"
+     https://github.com/binderhub-ci-repos/minimal-dockerfile
+   ```
+
+To use a local registry as a cache:
 
 ```
-./run-local-registry.sh
+./ci/run-local-registry.sh
 REGISTRY=...
-podman run -it --rm quay.io/manics/repo2kaniko \
-    repo2docker --debug --engine=kaniko \
-    --Repo2Docker.user_id=1000 --user-name=jovyan \
+```
+
+Add the following to the `repo2docker` command:
+
+```
     --KanikoEngine.cache_registry=$REGISTRY/cache \
     --KanikoEngine.cache_registry_credentials=username=user \
     --KanikoEngine.cache_registry_credentials=password=password \
     --KanikoEngine.cache_registry_insecure=true \
-    --image-name=$REGISTRY/r2d-test \
-    --no-run \
-    https://github.com/binderhub-ci-repos/minimal-dockerfile
 ```
 
 ## BinderHub
