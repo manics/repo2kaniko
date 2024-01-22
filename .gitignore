@@ -136,4 +136,4 @@ tests/*/
 
 registry.htpasswd
 .docker
-kaniko-runner
+kaniko-runner/kaniko-runner

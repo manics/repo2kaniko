@@ -8,7 +8,8 @@ RUN apk add --no-cache make git
 WORKDIR /src
 COPY go.mod go.sum main.go Makefile ./
 
-ARG TARGETOS TARGETARCH
+ARG TARGETOS
+ARG TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make build
 
 ###########################################################################

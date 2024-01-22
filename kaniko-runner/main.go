@@ -231,7 +231,7 @@ func main() {
 	var listenAddr string
 	flag.StringVar(&listenAddr, "address", "tcp://localhost:8080", "address to listen on, e.g. unix:///tmp/go-runner.sock, tcp://localhost:8080")
 	var multiple bool
-	flag.BoolVar(&multiple, "multiple", false, "Keep listening after request finishes, , not supported by Kaniko")
+	flag.BoolVar(&multiple, "multiple", false, "Keep listening after request finishes, not supported by Kaniko")
 	flag.Parse()
 
 	ln, err := listen(listenAddr)

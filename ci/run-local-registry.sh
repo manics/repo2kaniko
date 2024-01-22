@@ -6,7 +6,9 @@ set -eu
 # Create htpasswd file with brcrypt for basic auth
 # Username: user
 # Password: password
-htpasswd -Bbn user password > registry.htpasswd
+if [ ! -f registry.htpasswd ]; then
+  htpasswd -Bbn user password > registry.htpasswd
+fi
 
 podman run -it --rm --name registry \
   -p 5000:5000 \

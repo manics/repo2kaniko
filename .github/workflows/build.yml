@@ -66,9 +66,17 @@ jobs:
       - name: Podman info
         run: podman info
 
-      - name: Build and test container
-        run: |
-          ./ci/build-and-test.sh
+      - name: Install from repo
+        run: pip install .
+
+      - name: Build container
+        run: ./ci/build.sh
+
+      - name: Test local repo2kaniko
+        run: ./ci/test.sh repo2docker
+
+      - name: Test repo2kaniko container
+        run: ./ci/test.sh container
 
   # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-pypi
   publish-pypi:
