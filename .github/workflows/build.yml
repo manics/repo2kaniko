@@ -132,7 +132,7 @@ jobs:
           - context: .
             image_name: manics/repo2kaniko
           - context: ./kaniko-runner
-            image_name: manics/repo2kaniko-runner
+            image_name: manics/kaniko-runner
 
     steps:
       - name: Should we push this image to a public registry?
