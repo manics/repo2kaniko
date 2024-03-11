@@ -1,4 +1,4 @@
-FROM gcr.io/kaniko-project/executor:v1.21.0 as kaniko
+FROM gcr.io/kaniko-project/executor:v1.21.1 as kaniko
 
 FROM quay.io/jupyterhub/repo2docker:2023.06.0-41.g57d229e
 
