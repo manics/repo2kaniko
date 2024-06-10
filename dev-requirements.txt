@@ -1,5 +1,5 @@
 build==1.2.1
 jupyter-repo2docker==2024.3.0
 repo2podman==0.2.0
-pytest==8.2.1
+pytest==8.2.2
 pre-commit==3.7.1
