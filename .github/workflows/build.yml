@@ -108,7 +108,7 @@ jobs:
       # Uses OIDC
       - name: Publish to PyPI
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@v1.12.3
+        uses: pypa/gh-action-pypi-publish@v1.12.4
 
   container:
     name: Build container
