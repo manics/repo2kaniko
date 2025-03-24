@@ -2,4 +2,4 @@ build==1.2.2
 jupyter-repo2docker==2024.7.0
 repo2podman==0.2.0
 pytest==8.3.4
-pre-commit==4.1.0
+pre-commit==4.2.0
