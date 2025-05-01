@@ -171,7 +171,7 @@ jobs:
       # https://github.com/jupyterhub/action-major-minor-tag-calculator
       - name: Get list of image tags
         id: imagetags
-        uses: jupyterhub/action-major-minor-tag-calculator@v3.2.0
+        uses: jupyterhub/action-major-minor-tag-calculator@v3.4.0
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           prefix: "${{ env.REGISTRY }}/${{ matrix.image_name }}:"
